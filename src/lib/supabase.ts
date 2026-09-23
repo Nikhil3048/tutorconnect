@@ -2,8 +2,8 @@ import { createClient } from '@supabase/supabase-js';
 import type { TutorApplication, ParentInquiry, TutorMatch, TutorApplicationStatus, InquiryStatus } from '../types';
 import { INITIAL_TUTORS, INITIAL_INQUIRIES, INITIAL_MATCHES } from './seedData';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL || import.meta.env.NEXT_PUBLIC_SUPABASE_URL || '') as string;
+const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || '') as string;
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
