@@ -5,7 +5,42 @@ import { INITIAL_TUTORS, INITIAL_INQUIRIES, INITIAL_MATCHES } from './seedData';
 const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL || import.meta.env.NEXT_PUBLIC_SUPABASE_URL || '') as string;
 const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || '') as string;
 
-export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
+const isValidSupabaseUrl = (url: string): boolean => {
+  if (!url || typeof url !== 'string') return false;
+  const trimmed = url.trim();
+  if (
+    trimmed.includes('your-supabase-project') ||
+    trimmed.includes('your-project-id') ||
+    trimmed.includes('your-anon-key') ||
+    trimmed.includes('YOUR_') ||
+    trimmed.includes('example.com') ||
+    trimmed.includes('placeholder')
+  ) {
+    return false;
+  }
+  try {
+    const parsed = new URL(trimmed);
+    return (parsed.protocol === 'http:' || parsed.protocol === 'https:') && !parsed.hostname.includes('your-');
+  } catch {
+    return false;
+  }
+};
+
+const isValidSupabaseKey = (key: string): boolean => {
+  if (!key || typeof key !== 'string') return false;
+  const trimmed = key.trim();
+  if (
+    trimmed.includes('your-anon-key') ||
+    trimmed.includes('your-supabase') ||
+    trimmed.includes('YOUR_') ||
+    trimmed.includes('placeholder')
+  ) {
+    return false;
+  }
+  return trimmed.length > 10;
+};
+
+export const isSupabaseConfigured = isValidSupabaseUrl(supabaseUrl) && isValidSupabaseKey(supabaseAnonKey);
 
 export const supabase = isSupabaseConfigured 
   ? createClient(supabaseUrl, supabaseAnonKey)
@@ -245,7 +280,7 @@ export const submitParentInquiry = async (inqData: Omit<ParentInquiry, 'id' | 'i
 
   if (isSupabaseConfigured && supabase) {
     try {
-      const { data } = await supabase
+      const { error } = await supabase
         .from('parent_inquiries')
         .insert([{
           inquiry_id: inquiryId,
@@ -269,12 +304,10 @@ export const submitParentInquiry = async (inqData: Omit<ParentInquiry, 'id' | 'i
           preferred_time_slots: inqData.preferredTimeSlots,
           additional_requirements: inqData.additionalRequirements,
           status: 'New'
-        }])
-        .select()
-        .single();
+        }]);
 
-      if (data) {
-        newInquiry.id = data.id;
+      if (error) {
+        console.warn('Supabase insert warning:', error);
       }
     } catch (err) {
       console.warn('Supabase insert failed, saving locally:', err);

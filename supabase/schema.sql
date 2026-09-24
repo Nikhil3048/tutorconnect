@@ -182,8 +182,12 @@ CREATE POLICY "Anyone can create parent inquiry"
   ON public.parent_inquiries FOR INSERT
   WITH CHECK (true);
 
-CREATE POLICY "Admins can view and update parent inquiries"
-  ON public.parent_inquiries FOR ALL
+CREATE POLICY "Anyone can view parent inquiries"
+  ON public.parent_inquiries FOR SELECT
+  USING (true);
+
+CREATE POLICY "Admins can update parent inquiries"
+  ON public.parent_inquiries FOR UPDATE
   USING (public.is_admin());
 
 -- Tutor Matches Policies
