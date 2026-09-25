@@ -380,3 +380,11 @@ export const saveTutorMatch = async (match: Omit<TutorMatch, 'id' | 'createdAt'>
 
   return newMatch;
 };
+
+export const clearAllLocalData = async (): Promise<void> => {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem(LOCAL_STORAGE_TUTORS_KEY);
+    localStorage.removeItem(LOCAL_STORAGE_INQUIRIES_KEY);
+    localStorage.removeItem(LOCAL_STORAGE_MATCHES_KEY);
+  }
+};

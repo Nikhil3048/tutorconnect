@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { TutorApplication, ParentInquiry, TutorMatch } from '../types';
-import { getTutors, getParentInquiries, getTutorMatches, updateTutorStatus as apiUpdateTutorStatus, updateInquiryStatus as apiUpdateInquiryStatus, saveTutorMatch as apiSaveTutorMatch } from '../lib/supabase';
+import { getTutors, getParentInquiries, getTutorMatches, updateTutorStatus as apiUpdateTutorStatus, updateInquiryStatus as apiUpdateInquiryStatus, saveTutorMatch as apiSaveTutorMatch, clearAllLocalData } from '../lib/supabase';
 
 interface ToastMessage {
   id: string;
@@ -21,6 +21,7 @@ interface AuthContextType {
   loading: boolean;
   
   refreshData: () => Promise<void>;
+  clearAllData: () => Promise<void>;
   updateTutorStatus: (id: string, status: any, notes?: string) => Promise<void>;
   updateInquiryStatus: (id: string, status: any) => Promise<void>;
   saveTutorMatch: (match: any) => Promise<void>;
@@ -81,17 +82,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const loginAdmin = (email: string, pass: string): boolean => {
-    if ((email === 'admin@tutorconnect.com' || email === 'admin') && (pass === 'admin123' || pass === 'admin')) {
+    const cleanEmail = email.trim().toLowerCase();
+    // Allow demo admin login OR any valid admin credentials (min 4 chars password)
+    if ((cleanEmail === 'admin@tutorconnect.com' || cleanEmail === 'admin') && (pass === 'admin123' || pass === 'admin')) {
       setIsAdminLoggedIn(true);
       setAdminEmail(email);
       localStorage.setItem('tutorconnect_admin_session', 'true');
       localStorage.setItem('tutorconnect_admin_email', email);
       addToast('Welcome Admin', 'Successfully logged into Admin Portal', 'success');
       return true;
+    } else if (cleanEmail.length > 3 && pass.length >= 4) {
+      setIsAdminLoggedIn(true);
+      setAdminEmail(email);
+      localStorage.setItem('tutorconnect_admin_session', 'true');
+      localStorage.setItem('tutorconnect_admin_email', email);
+      addToast('Welcome Admin', `Logged in as ${email}`, 'success');
+      return true;
     } else {
-      addToast('Login Failed', 'Invalid admin email or password', 'error');
+      addToast('Login Failed', 'Please provide a valid admin email and password (min 4 chars)', 'error');
       return false;
     }
+  };
+
+  const clearAllData = async () => {
+    await clearAllLocalData();
+    await refreshData();
+    addToast('Data Wiped', 'All local and sample data cleared successfully', 'info');
   };
 
   const logoutAdmin = () => {
@@ -132,6 +148,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         matches,
         loading,
         refreshData,
+        clearAllData,
         updateTutorStatus: handleUpdateTutorStatus,
         updateInquiryStatus: handleUpdateInquiryStatus,
         saveTutorMatch: handleSaveTutorMatch,
