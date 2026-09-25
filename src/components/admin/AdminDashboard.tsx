@@ -9,7 +9,7 @@ import type { TutorApplication, ParentInquiry } from '../../types';
 import { 
   LayoutDashboard, Users, UserCheck, Clock, XCircle, 
   FileText, Sparkles, FolderLock, Settings, LogOut, 
-  ShieldCheck, Trash2, Database, Copy, Check, UserPlus
+  ShieldCheck, Trash2, Database, Copy, Check, UserPlus, UserMinus
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -20,6 +20,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateHome }
   const { tutors, inquiries, logoutAdmin, adminEmail, clearAllData, addToast } = useAuth();
   const [copiedSql, setCopiedSql] = useState<string | null>(null);
   const [newAdminEmail, setNewAdminEmail] = useState('');
+  const [removeAdminEmail, setRemoveAdminEmail] = useState('');
 
   const [activeTab, setActiveTab] = useState<'overview' | 'tutors' | 'inquiries' | 'matching' | 'documents' | 'settings'>('overview');
   
@@ -413,12 +414,49 @@ UPDATE public.profiles SET role = 'admin' WHERE email = '${newAdminEmail.trim() 
                 </pre>
               </div>
 
-              {/* Tool 2: Clean Dummy Data SQL */}
+              {/* Tool 2: Remove / Revoke Admin SQL */}
+              <div className="space-y-3 bg-slate-800/80 p-5 rounded-2xl border border-slate-700">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-bold text-sm text-amber-400 flex items-center gap-2">
+                    <UserMinus className="w-4 h-4" />
+                    2. Remove / Revoke Admin Role in Supabase
+                  </h4>
+                  <button
+                    onClick={() => {
+                      const target = removeAdminEmail.trim() || 'user@example.com';
+                      const sql = `-- Revoke Admin role from user email in Supabase\nUPDATE public.profiles SET role = 'tutor' WHERE LOWER(email) = LOWER('${target}') AND role = 'admin';`;
+                      navigator.clipboard.writeText(sql);
+                      setCopiedSql('remove_admin');
+                      addToast('Copied SQL!', 'Remove Admin SQL script copied to clipboard', 'success');
+                      setTimeout(() => setCopiedSql(null), 2500);
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold flex items-center gap-1.5"
+                  >
+                    {copiedSql === 'remove_admin' ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copiedSql === 'remove_admin' ? 'Copied SQL!' : 'Copy Remove Admin SQL'}
+                  </button>
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="email"
+                    placeholder="Enter email to revoke Admin role (e.g., user@example.com)"
+                    value={removeAdminEmail}
+                    onChange={(e) => setRemoveAdminEmail(e.target.value)}
+                    className="flex-1 px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+                <pre className="p-3 bg-slate-950 rounded-xl font-mono text-[11px] text-slate-300 overflow-x-auto leading-relaxed border border-slate-800">
+{`-- Execute in Supabase SQL Editor:
+UPDATE public.profiles SET role = 'tutor' WHERE LOWER(email) = LOWER('${removeAdminEmail.trim() || 'user@example.com'}') AND role = 'admin';`}
+                </pre>
+              </div>
+
+              {/* Tool 3: Clean Dummy Data SQL */}
               <div className="space-y-3 bg-slate-800/80 p-5 rounded-2xl border border-slate-700">
                 <div className="flex items-center justify-between">
                   <h4 className="font-bold text-sm text-rose-400 flex items-center gap-2">
                     <Trash2 className="w-4 h-4" />
-                    2. Clear All Dummy Data in Supabase Database
+                    3. Clear All Dummy Data in Supabase Database
                   </h4>
                   <button
                     onClick={() => {
