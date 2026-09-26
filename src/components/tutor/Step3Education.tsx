@@ -126,13 +126,13 @@ export const Step3Education: React.FC<Step3Props> = ({ data, onChange, errors })
       <div className="bg-slate-50/70 rounded-2xl p-5 border border-slate-200 space-y-4">
         <div className="flex items-center space-x-2 text-indigo-700 font-bold">
           <BookOpen className="w-5 h-5" />
-          <h4 className="text-base">Class 12 (Higher Secondary)</h4>
+          <h4 className="text-base">Class 12 (Higher Secondary) <span className="text-slate-400 font-normal text-sm">(Optional)</span></h4>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-              Board <span className="text-rose-500">*</span>
+              Board
             </label>
             <select
               value={class12.board}
@@ -149,7 +149,7 @@ export const Step3Education: React.FC<Step3Props> = ({ data, onChange, errors })
 
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-              Stream <span className="text-rose-500">*</span>
+              Stream
             </label>
             <select
               value={class12.stream}
@@ -165,7 +165,7 @@ export const Step3Education: React.FC<Step3Props> = ({ data, onChange, errors })
 
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-              Passing Year <span className="text-rose-500">*</span>
+              Passing Year
             </label>
             <input
               type="number"
@@ -180,7 +180,7 @@ export const Step3Education: React.FC<Step3Props> = ({ data, onChange, errors })
 
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-              School Name <span className="text-rose-500">*</span>
+              School Name
             </label>
             <input
               type="text"
@@ -195,7 +195,7 @@ export const Step3Education: React.FC<Step3Props> = ({ data, onChange, errors })
 
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-              Percentage / CGPA <span className="text-rose-500">*</span>
+              Percentage / CGPA
             </label>
             <input
               type="text"
@@ -230,13 +230,13 @@ export const Step3Education: React.FC<Step3Props> = ({ data, onChange, errors })
       <div className="bg-slate-50/70 rounded-2xl p-5 border border-slate-200 space-y-4">
         <div className="flex items-center space-x-2 text-emerald-700 font-bold">
           <GraduationCap className="w-5 h-5" />
-          <h4 className="text-base">Higher Education</h4>
+          <h4 className="text-base">Higher Education <span className="text-slate-400 font-normal text-sm">(Optional)</span></h4>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-              Highest Qualification <span className="text-rose-500">*</span>
+              Highest Qualification
             </label>
             <select
               value={higherEdu.highestQualification}
@@ -254,7 +254,7 @@ export const Step3Education: React.FC<Step3Props> = ({ data, onChange, errors })
 
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-              Degree / Course Name <span className="text-rose-500">*</span>
+              Degree / Course Name
             </label>
             <input
               type="text"
@@ -269,7 +269,7 @@ export const Step3Education: React.FC<Step3Props> = ({ data, onChange, errors })
 
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-              College / University <span className="text-rose-500">*</span>
+              College / University
             </label>
             <input
               type="text"
@@ -284,7 +284,7 @@ export const Step3Education: React.FC<Step3Props> = ({ data, onChange, errors })
 
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-              Passing Year <span className="text-rose-500">*</span>
+              Passing Year
             </label>
             <input
               type="number"
@@ -299,7 +299,7 @@ export const Step3Education: React.FC<Step3Props> = ({ data, onChange, errors })
 
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-              Percentage / CGPA <span className="text-rose-500">*</span>
+              Percentage / CGPA
             </label>
             <input
               type="text"

@@ -30,11 +30,7 @@ export const Step1Personal: React.FC<Step1Props> = ({ data, onChange, errors }) 
               type="text"
               placeholder="e.g. Rahul Kumar"
               value={data.fullName || ''}
-              onChange={(e) => onChange({ 
-                fullName: e.target.value,
-                photoUrl: data.photoUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400',
-                photoFileName: data.photoFileName || 'passport_photo.jpg'
-              })}
+              onChange={(e) => onChange({ fullName: e.target.value })}
               className={`w-full pl-11 pr-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${
                 errors.fullName ? 'border-rose-400 focus:ring-rose-200 bg-rose-50/30' : 'border-slate-300 focus:border-blue-500 focus:ring-blue-100'
               }`}
@@ -185,8 +181,8 @@ export const Step1Personal: React.FC<Step1Props> = ({ data, onChange, errors }) 
 
       <div className="pt-2 border-t border-slate-100">
         <FileUpload
-          label="Profile / Passport-size Photo"
-          required
+          label="Profile / Passport-size Photo (Optional)"
+          required={false}
           isImage
           accept="image/jpeg,image/png,image/webp"
           maxSizeMB={5}

@@ -119,7 +119,6 @@ export const TutorRegistrationWizard: React.FC<WizardProps> = ({ onSuccess }) =>
       if (!formData.mobile || formData.mobile.length < 10) errs.mobile = 'Valid 10-digit phone number is required';
       if (!formData.whatsapp || formData.whatsapp.length < 10) errs.whatsapp = 'Valid 10-digit WhatsApp number is required';
       if (!formData.email || !formData.email.includes('@')) errs.email = 'Valid email address is required';
-      if (!formData.photoUrl) errs.photoUrl = 'Profile passport photo is required';
     }
 
     if (step === 2) {
@@ -136,15 +135,6 @@ export const TutorRegistrationWizard: React.FC<WizardProps> = ({ onSuccess }) =>
       if (!formData.class10?.passingYear) errs['class10.passingYear'] = 'Class 10 passing year is required';
       if (!formData.class10?.schoolName) errs['class10.schoolName'] = 'Class 10 school name is required';
       if (!formData.class10?.percentage) errs['class10.percentage'] = 'Class 10 percentage/CGPA is required';
-
-      if (!formData.class12?.passingYear) errs['class12.passingYear'] = 'Class 12 passing year is required';
-      if (!formData.class12?.schoolName) errs['class12.schoolName'] = 'Class 12 school name is required';
-      if (!formData.class12?.percentage) errs['class12.percentage'] = 'Class 12 percentage/CGPA is required';
-
-      if (!formData.higherEdu?.degree) errs['higherEdu.degree'] = 'Degree/Course name is required';
-      if (!formData.higherEdu?.institution) errs['higherEdu.institution'] = 'College/University name is required';
-      if (!formData.higherEdu?.passingYear) errs['higherEdu.passingYear'] = 'Passing year is required';
-      if (!formData.higherEdu?.percentage) errs['higherEdu.percentage'] = 'Percentage/CGPA is required';
     }
 
     if (step === 4) {
@@ -153,8 +143,7 @@ export const TutorRegistrationWizard: React.FC<WizardProps> = ({ onSuccess }) =>
     }
 
     if (step === 5) {
-      if (!formData.identityDoc?.docNumber?.trim()) errs['identityDoc.docNumber'] = 'Document ID number is required';
-      if (!formData.identityDoc?.fileUrl) errs['identityDoc.fileUrl'] = 'Identity proof document file upload is required';
+      // Step 5 documents & identity proof are optional
     }
 
     if (step === 6) {

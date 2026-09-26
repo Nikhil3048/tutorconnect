@@ -12,9 +12,9 @@ interface Step5Props {
 export const Step5Documents: React.FC<Step5Props> = ({ data, onChange, errors }) => {
   const identityDoc: DocumentUpload = data.identityDoc || {
     docType: 'Aadhaar Card',
-    docNumber: 'XXXX-XXXX-9999',
-    fileUrl: '#sample-doc-preview',
-    fileName: 'identity_doc_verified.pdf',
+    docNumber: '',
+    fileUrl: '',
+    fileName: '',
     uploadedAt: new Date().toISOString(),
   };
 
@@ -27,8 +27,6 @@ export const Step5Documents: React.FC<Step5Props> = ({ data, onChange, errors })
       identityDoc: {
         ...identityDoc,
         docNumber,
-        fileUrl: identityDoc.fileUrl || '#sample-doc-preview',
-        fileName: identityDoc.fileName || 'identity_doc_verified.pdf',
       }
     });
   };
@@ -59,7 +57,7 @@ export const Step5Documents: React.FC<Step5Props> = ({ data, onChange, errors })
       <div className="bg-slate-50/70 rounded-2xl p-6 border border-slate-200 space-y-5">
         <div className="flex items-center space-x-2 text-slate-900 font-bold">
           <ShieldCheck className="w-5 h-5 text-blue-600" />
-          <h4 className="text-base">Government Identity Proof <span className="text-rose-500">*</span></h4>
+          <h4 className="text-base">Government Identity Proof <span className="text-slate-400 font-normal text-sm">(Optional)</span></h4>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -83,7 +81,7 @@ export const Step5Documents: React.FC<Step5Props> = ({ data, onChange, errors })
 
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
-              Document Number <span className="text-rose-500">*</span>
+              Document Number <span className="text-slate-400 font-normal">(Optional)</span>
             </label>
             <input
               type="text"
@@ -102,8 +100,8 @@ export const Step5Documents: React.FC<Step5Props> = ({ data, onChange, errors })
 
         <div className="pt-2">
           <FileUpload
-            label={`Upload ${identityDoc.docType} Copy (Front & Back or Single PDF)`}
-            required
+            label={`Upload ${identityDoc.docType} Copy (Front & Back or Single PDF) (Optional)`}
+            required={false}
             accept="application/pdf,image/*"
             maxSizeMB={5}
             helpText="Clear scan or photo in PDF/JPG/PNG (Max 5 MB)"

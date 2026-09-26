@@ -5,7 +5,7 @@ import { StatusBadge } from '../common/Badge';
 import { useAuth } from '../../context/AuthContext';
 import { 
   User, MapPin, GraduationCap, 
-  BookOpen, FileText, CheckCircle2, XCircle, AlertTriangle, 
+  BookOpen, CheckCircle2, XCircle, AlertTriangle, 
   Eye, ShieldCheck 
 } from 'lucide-react';
 
@@ -235,63 +235,79 @@ export const TutorProfileDetailModal: React.FC<ModalProps> = ({ tutor, onClose }
             </div>
           </div>
 
+          {/* Uploaded Documents Vault */}
           <div className="bg-slate-900 text-white rounded-3xl p-6 space-y-4 shadow-lg">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center space-x-2">
                 <ShieldCheck className="w-5 h-5 text-emerald-400" />
-                <h4 className="font-bold text-base text-white">Private Identity & Verification Documents</h4>
+                <h4 className="font-bold text-base text-white">Verification & Uploaded Documents Vault</h4>
               </div>
               <span className="text-[11px] bg-slate-800 text-slate-300 px-3 py-1 rounded-full font-mono">
-                Admin Secure View
+                Admin Inspection
               </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="bg-slate-800/80 rounded-2xl p-4 border border-slate-700 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-blue-400">{tutor.identityDoc.docType}</span>
-                  <span className="text-[10px] text-slate-400 font-mono">Verified Format</span>
-                </div>
-                <p className="text-sm font-mono font-bold text-white tracking-wider">
-                  Doc #: {tutor.identityDoc.docNumber}
-                </p>
-                <div className="pt-2 flex items-center space-x-2">
-                  <button
-                    onClick={() => {
-                      setDocPreviewUrl(tutor.identityDoc.fileUrl);
-                      setDocPreviewTitle(`${tutor.fullName} — ${tutor.identityDoc.docType}`);
-                    }}
-                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs rounded-xl flex items-center gap-1.5"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                    Preview Document
-                  </button>
-                </div>
-              </div>
+            {(() => {
+              const docs = [
+                tutor.photoUrl || tutor.photoFileName
+                  ? { title: 'Profile Photo', sub: 'Passport Photo', url: tutor.photoUrl, fileName: tutor.photoFileName || 'Profile_Photo.jpg' }
+                  : null,
+                tutor.identityDoc?.fileUrl || tutor.identityDoc?.docNumber || tutor.identityDoc?.fileName
+                  ? { title: `Identity Proof (${tutor.identityDoc.docType || 'ID Document'})`, sub: tutor.identityDoc.docNumber ? `Doc #: ${tutor.identityDoc.docNumber}` : 'Government ID', url: tutor.identityDoc.fileUrl, fileName: tutor.identityDoc.fileName || `${tutor.identityDoc.docType}_Scan.pdf` }
+                  : null,
+                tutor.class10?.marksheetUrl || tutor.class10?.marksheetFileName
+                  ? { title: 'Class 10 Marksheet', sub: `Board: ${tutor.class10.board}`, url: tutor.class10.marksheetUrl, fileName: tutor.class10.marksheetFileName || 'Class10_Marksheet.pdf' }
+                  : null,
+                tutor.class12?.marksheetUrl || tutor.class12?.marksheetFileName
+                  ? { title: 'Class 12 Marksheet', sub: `Stream: ${tutor.class12.stream || 'Academic'}`, url: tutor.class12.marksheetUrl, fileName: tutor.class12.marksheetFileName || 'Class12_Marksheet.pdf' }
+                  : null,
+                tutor.higherEdu?.certificateUrl || tutor.higherEdu?.certificateFileName
+                  ? { title: 'Higher Education Degree / Certificate', sub: tutor.higherEdu.degree || 'Degree Certificate', url: tutor.higherEdu.certificateUrl, fileName: tutor.higherEdu.certificateFileName || 'Graduation_Certificate.pdf' }
+                  : null,
+              ].filter(Boolean) as { title: string; sub: string; url?: string; fileName: string }[];
 
-              <div className="bg-slate-800/80 rounded-2xl p-4 border border-slate-700 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-indigo-400">Class 12 / Degree Marksheet</span>
-                  <span className="text-[10px] text-slate-400">Academic Upload</span>
+              if (docs.length === 0) {
+                return (
+                  <div className="p-6 bg-slate-800/50 rounded-2xl border border-slate-700/60 text-center text-slate-400 text-xs">
+                    No documents or certificates uploaded by this tutor.
+                  </div>
+                );
+              }
+
+              return (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {docs.map((doc, idx) => (
+                    <div key={idx} className="bg-slate-800/80 rounded-2xl p-4 border border-slate-700 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-blue-400">{doc.title}</span>
+                        <span className="text-[10px] text-slate-400 font-mono truncate max-w-[120px]">{doc.sub}</span>
+                      </div>
+                      <p className="text-xs text-slate-300 font-mono truncate">
+                        File: {doc.fileName}
+                      </p>
+                      <div className="pt-2 flex items-center space-x-2">
+                        {doc.url ? (
+                          <button
+                            onClick={() => {
+                              setDocPreviewUrl(doc.url!);
+                              setDocPreviewTitle(`${tutor.fullName} — ${doc.title}`);
+                            }}
+                            className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs rounded-xl flex items-center gap-1.5 transition-colors"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            Preview Document
+                          </button>
+                        ) : (
+                          <span className="px-3 py-1 bg-slate-700 text-slate-400 text-xs rounded-lg font-mono">
+                            File attached: {doc.fileName}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <p className="text-xs text-slate-300 truncate">
-                  {tutor.class12.marksheetFileName || tutor.higherEdu.certificateFileName || 'Marksheet_Scan.pdf'}
-                </p>
-                <div className="pt-2 flex items-center space-x-2">
-                  <button
-                    onClick={() => {
-                      const url = tutor.class12.marksheetUrl || tutor.higherEdu.certificateUrl || tutor.identityDoc.fileUrl;
-                      setDocPreviewUrl(url);
-                      setDocPreviewTitle(`${tutor.fullName} — Marksheet Scan`);
-                    }}
-                    className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl flex items-center gap-1.5"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                    Preview Marksheet
-                  </button>
-                </div>
-              </div>
-            </div>
+              );
+            })()}
           </div>
 
         </div>
@@ -304,25 +320,31 @@ export const TutorProfileDetailModal: React.FC<ModalProps> = ({ tutor, onClose }
           title={docPreviewTitle}
           maxWidth="4xl"
         >
-          <div className="space-y-4 text-center">
-            <div className="p-4 bg-slate-900 rounded-2xl overflow-hidden min-h-[300px] flex items-center justify-center">
-              {docPreviewUrl.startsWith('data:image') || docPreviewUrl.includes('unsplash') || docPreviewUrl.endsWith('.jpg') || docPreviewUrl.endsWith('.png') ? (
-                <img src={docPreviewUrl} alt="Doc Preview" className="max-h-[500px] max-w-full object-contain rounded-lg" />
+          <div className="space-y-4">
+            <div className="p-4 bg-slate-900 rounded-2xl overflow-hidden min-h-[350px] flex items-center justify-center border border-slate-800">
+              {docPreviewUrl.startsWith('data:image') || docPreviewUrl.startsWith('blob:') || docPreviewUrl.includes('unsplash') || /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(docPreviewUrl) ? (
+                <img src={docPreviewUrl} alt="Document Preview" className="max-h-[550px] max-w-full object-contain rounded-lg shadow-md" />
+              ) : docPreviewUrl.startsWith('data:application/pdf') || docPreviewUrl.endsWith('.pdf') ? (
+                <iframe src={docPreviewUrl} className="w-full h-[550px] rounded-xl border border-slate-700" title="PDF Document Preview" />
               ) : (
-                <div className="text-white space-y-3 py-10">
-                  <FileText className="w-16 h-16 text-blue-400 mx-auto" />
-                  <p className="text-sm font-semibold">Document File Preview</p>
-                  <p className="text-xs text-slate-400 max-w-xs mx-auto">
-                    Secure document content is encrypted in Supabase Storage.
-                  </p>
-                </div>
+                <iframe src={docPreviewUrl} className="w-full h-[500px] rounded-xl border border-slate-700" title="Document Preview" />
               )}
             </div>
 
-            <div className="flex justify-end">
+            <div className="flex items-center justify-between pt-2">
+              <a
+                href={docPreviewUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors"
+              >
+                <Eye className="w-4 h-4" />
+                Open Original File / Download
+              </a>
+
               <button
                 onClick={() => setDocPreviewUrl(null)}
-                className="px-5 py-2 rounded-xl bg-slate-800 text-white font-semibold text-xs"
+                className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs"
               >
                 Close Preview
               </button>
