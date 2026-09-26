@@ -45,13 +45,22 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       return;
     }
 
-    const objectUrl = URL.createObjectURL(file);
-    onFileSelect({
-      url: objectUrl,
-      fileName: file.name,
-      sizeMB: `${sizeInMB.toFixed(2)} MB`,
-      fileObj: file,
-    });
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      if (dataUrl) {
+        onFileSelect({
+          url: dataUrl,
+          fileName: file.name,
+          sizeMB: `${sizeInMB.toFixed(2)} MB`,
+          fileObj: file,
+        });
+      }
+    };
+    reader.onerror = () => {
+      setError('Failed to process uploaded file. Please try another file.');
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleUseSample = (e: React.MouseEvent) => {

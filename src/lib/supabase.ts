@@ -75,7 +75,7 @@ export const getTutors = async (): Promise<TutorApplication[]> => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      if (data && data.length > 0) {
+      if (data) {
         return data.map((row) => ({
           id: row.id,
           applicationId: row.application_id,
