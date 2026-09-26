@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { ShieldCheck, Lock, Mail, KeyRound, ArrowRight } from 'lucide-react';
+import { ShieldCheck, Lock, Mail, ArrowRight, Loader2 } from 'lucide-react';
 
 interface LoginProps {
   onSuccess: () => void;
@@ -10,21 +10,20 @@ export const AdminLoginForm: React.FC<LoginProps> = ({ onSuccess }) => {
   const { loginAdmin } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const ok = loginAdmin(email, password);
-    if (ok) {
-      onSuccess();
-    }
-  };
+    if (!email || !password) return;
 
-  const handleDemoFill = () => {
-    setEmail('admin@tutorconnect.com');
-    setPassword('admin123');
-    const ok = loginAdmin('admin@tutorconnect.com', 'admin123');
-    if (ok) {
-      onSuccess();
+    setIsSubmitting(true);
+    try {
+      const ok = await loginAdmin(email, password);
+      if (ok) {
+        onSuccess();
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -42,25 +41,6 @@ export const AdminLoginForm: React.FC<LoginProps> = ({ onSuccess }) => {
         </p>
       </div>
 
-      {/* Demo Credentials Quick Button */}
-      <div className="p-4 bg-blue-50/70 border border-blue-200 rounded-2xl text-xs text-blue-900 space-y-2">
-        <div className="flex items-center justify-between font-bold">
-          <span>Demo Admin Credentials:</span>
-          <span className="text-blue-600 font-mono text-[11px]">Auto-Fill Ready</span>
-        </div>
-        <p className="text-[11px] text-slate-600">
-          Email: <span className="font-mono text-slate-900 font-bold">admin@tutorconnect.com</span> | Pass: <span className="font-mono text-slate-900 font-bold">admin123</span>
-        </p>
-        <button
-          type="button"
-          onClick={handleDemoFill}
-          className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs shadow-xs transition-colors flex items-center justify-center gap-1.5"
-        >
-          <KeyRound className="w-3.5 h-3.5" />
-          Click to Auto-Fill & Login as Admin
-        </button>
-      </div>
-
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -70,8 +50,9 @@ export const AdminLoginForm: React.FC<LoginProps> = ({ onSuccess }) => {
           <div className="relative">
             <Mail className="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
-              type="text"
-              placeholder="admin@tutorconnect.com"
+              type="email"
+              required
+              placeholder="admin@yourdomain.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-300 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none"
@@ -87,6 +68,7 @@ export const AdminLoginForm: React.FC<LoginProps> = ({ onSuccess }) => {
             <Lock className="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="password"
+              required
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -97,10 +79,20 @@ export const AdminLoginForm: React.FC<LoginProps> = ({ onSuccess }) => {
 
         <button
           type="submit"
-          className="w-full py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm shadow-lg shadow-slate-900/20 flex items-center justify-center gap-2 transition-all"
+          disabled={isSubmitting}
+          className="w-full py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:bg-slate-700 text-white font-bold text-sm shadow-lg shadow-slate-900/20 flex items-center justify-center gap-2 transition-all cursor-pointer"
         >
-          Login to Admin Dashboard
-          <ArrowRight className="w-4 h-4 text-emerald-400" />
+          {isSubmitting ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
+              Authenticating with Supabase...
+            </>
+          ) : (
+            <>
+              Login to Admin Dashboard
+              <ArrowRight className="w-4 h-4 text-emerald-400" />
+            </>
+          )}
         </button>
       </form>
     </div>

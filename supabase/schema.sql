@@ -13,9 +13,9 @@ CREATE TYPE gender_type AS ENUM ('Male', 'Female', 'Other');
 CREATE TYPE teaching_mode_type AS ENUM ('Online', 'Offline', 'Both');
 CREATE TYPE fee_type_enum AS ENUM ('Per Hour', 'Per Class', 'Per Month');
 
--- 3. PROFILES TABLE (linked to auth.users)
+-- 3. PROFILES TABLE
 CREATE TABLE IF NOT EXISTS public.profiles (
-  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   role user_role DEFAULT 'tutor',
   full_name TEXT NOT NULL,
   email TEXT UNIQUE NOT NULL,

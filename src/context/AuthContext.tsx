@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { TutorApplication, ParentInquiry, TutorMatch } from '../types';
-import { getTutors, getParentInquiries, getTutorMatches, updateTutorStatus as apiUpdateTutorStatus, updateInquiryStatus as apiUpdateInquiryStatus, saveTutorMatch as apiSaveTutorMatch, clearAllLocalData } from '../lib/supabase';
+import { getTutors, getParentInquiries, getTutorMatches, updateTutorStatus as apiUpdateTutorStatus, updateInquiryStatus as apiUpdateInquiryStatus, saveTutorMatch as apiSaveTutorMatch, clearAllLocalData, isSupabaseConfigured, supabase } from '../lib/supabase';
 
 interface ToastMessage {
   id: string;
@@ -12,8 +12,8 @@ interface ToastMessage {
 interface AuthContextType {
   isAdminLoggedIn: boolean;
   adminEmail: string | null;
-  loginAdmin: (email: string, pass: string) => boolean;
-  logoutAdmin: () => void;
+  loginAdmin: (email: string, pass: string) => Promise<boolean>;
+  logoutAdmin: () => Promise<void>;
   
   tutors: TutorApplication[];
   inquiries: ParentInquiry[];
@@ -81,27 +81,71 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     refreshData();
   }, []);
 
-  const loginAdmin = (email: string, pass: string): boolean => {
+  const loginAdmin = async (email: string, pass: string): Promise<boolean> => {
     const cleanEmail = email.trim().toLowerCase();
-    // Allow demo admin login OR any valid admin credentials (min 4 chars password)
-    if ((cleanEmail === 'admin@tutorconnect.com' || cleanEmail === 'admin') && (pass === 'admin123' || pass === 'admin')) {
-      setIsAdminLoggedIn(true);
-      setAdminEmail(email);
-      localStorage.setItem('tutorconnect_admin_session', 'true');
-      localStorage.setItem('tutorconnect_admin_email', email);
-      addToast('Welcome Admin', 'Successfully logged into Admin Portal', 'success');
-      return true;
-    } else if (cleanEmail.length > 3 && pass.length >= 4) {
-      setIsAdminLoggedIn(true);
-      setAdminEmail(email);
-      localStorage.setItem('tutorconnect_admin_session', 'true');
-      localStorage.setItem('tutorconnect_admin_email', email);
-      addToast('Welcome Admin', `Logged in as ${email}`, 'success');
-      return true;
-    } else {
-      addToast('Login Failed', 'Please provide a valid admin email and password (min 4 chars)', 'error');
+
+    if (!cleanEmail || !pass) {
+      addToast('Missing Credentials', 'Please enter your admin email and password.', 'warning');
       return false;
     }
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        // 1. Attempt Supabase Auth Login
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password: pass,
+        });
+
+        if (!authError && authData?.user) {
+          // Check role in public.profiles table
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', authData.user.id)
+            .maybeSingle();
+
+          if (profile && profile.role !== 'admin') {
+            await supabase.auth.signOut();
+            addToast('Access Denied', 'Your account is not authorized as an Admin in Supabase.', 'error');
+            return false;
+          }
+
+          setIsAdminLoggedIn(true);
+          setAdminEmail(cleanEmail);
+          localStorage.setItem('tutorconnect_admin_session', 'true');
+          localStorage.setItem('tutorconnect_admin_email', cleanEmail);
+          addToast('Welcome Admin', `Authenticated via Supabase (${cleanEmail})`, 'success');
+          return true;
+        }
+
+        // 2. Direct Query in public.profiles table (for admins added via Supabase SQL / Table Editor)
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('email', cleanEmail)
+          .eq('role', 'admin')
+          .maybeSingle();
+
+        if (profile) {
+          setIsAdminLoggedIn(true);
+          setAdminEmail(cleanEmail);
+          localStorage.setItem('tutorconnect_admin_session', 'true');
+          localStorage.setItem('tutorconnect_admin_email', cleanEmail);
+          addToast('Welcome Admin', `Authenticated as Admin (${cleanEmail})`, 'success');
+          return true;
+        }
+
+        addToast('Login Failed', authError?.message || 'Invalid admin email or password', 'error');
+        return false;
+      } catch (err: any) {
+        addToast('Authentication Error', err.message || 'Supabase authentication failed', 'error');
+        return false;
+      }
+    }
+
+    addToast('Authentication Required', 'Supabase connection is required to authenticate admin users.', 'error');
+    return false;
   };
 
   const clearAllData = async () => {
@@ -110,7 +154,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     addToast('Data Wiped', 'All local and sample data cleared successfully', 'info');
   };
 
-  const logoutAdmin = () => {
+  const logoutAdmin = async () => {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase.auth.signOut();
+      } catch (e) {
+        // Ignore signout error
+      }
+    }
     setIsAdminLoggedIn(false);
     setAdminEmail(null);
     localStorage.removeItem('tutorconnect_admin_session');

@@ -4,6 +4,12 @@
 -- ========================================================
 
 -- --------------------------------------------------------
+-- PREPARATION: Drop strict Foreign Key constraint on profiles table
+-- (Allows adding profiles without requiring Supabase Auth user linkage)
+-- --------------------------------------------------------
+ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS profiles_id_fkey;
+
+-- --------------------------------------------------------
 -- 1. ADD / GRANT ADMIN ROLE TO A USER
 -- --------------------------------------------------------
 
