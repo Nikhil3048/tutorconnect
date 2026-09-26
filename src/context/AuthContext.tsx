@@ -170,12 +170,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const handleUpdateTutorStatus = async (id: string, status: any, notes?: string) => {
+    setTutors(prev => prev.map(t => {
+      if (t.id === id || t.applicationId === id) {
+        return {
+          ...t,
+          status,
+          adminNotes: notes !== undefined ? notes : t.adminNotes,
+          updatedAt: new Date().toISOString(),
+        };
+      }
+      return t;
+    }));
+
     await apiUpdateTutorStatus(id, status, notes);
     await refreshData();
     addToast('Tutor Status Updated', `Tutor application status changed to ${status}`, 'success');
   };
 
   const handleUpdateInquiryStatus = async (id: string, status: any) => {
+    setInquiries(prev => prev.map(i => {
+      if (i.id === id || i.inquiryId === id) {
+        return {
+          ...i,
+          status,
+          updatedAt: new Date().toISOString(),
+        };
+      }
+      return i;
+    }));
+
     await apiUpdateInquiryStatus(id, status);
     await refreshData();
     addToast('Inquiry Updated', `Inquiry status changed to ${status}`, 'success');

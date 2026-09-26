@@ -67,6 +67,9 @@ const initLocalStorage = () => {
 initLocalStorage();
 
 export const getTutors = async (): Promise<TutorApplication[]> => {
+  const stored = localStorage.getItem(LOCAL_STORAGE_TUTORS_KEY);
+  const localList: TutorApplication[] = stored ? JSON.parse(stored) : INITIAL_TUTORS;
+
   if (isSupabaseConfigured && supabase) {
     try {
       const { data, error } = await supabase
@@ -76,7 +79,7 @@ export const getTutors = async (): Promise<TutorApplication[]> => {
 
       if (error) throw error;
       if (data) {
-        return data.map((row) => ({
+        const remoteTutors: TutorApplication[] = data.map((row) => ({
           id: row.id,
           applicationId: row.application_id,
           userId: row.user_id,
@@ -106,14 +109,30 @@ export const getTutors = async (): Promise<TutorApplication[]> => {
           createdAt: row.created_at,
           updatedAt: row.updated_at,
         }));
+
+        // MERGE: Preserve locally updated statuses if remote is not updated yet (or if RLS prevented remote write)
+        const mergedTutors = remoteTutors.map(rt => {
+          const localMatch = localList.find(lt => lt.id === rt.id || lt.applicationId === rt.applicationId);
+          if (localMatch && localMatch.status !== rt.status) {
+            return {
+              ...rt,
+              status: localMatch.status,
+              adminNotes: localMatch.adminNotes ?? rt.adminNotes,
+              updatedAt: localMatch.updatedAt || rt.updatedAt,
+            };
+          }
+          return rt;
+        });
+
+        localStorage.setItem(LOCAL_STORAGE_TUTORS_KEY, JSON.stringify(mergedTutors));
+        return mergedTutors;
       }
     } catch (err) {
       console.warn('Supabase fetch failed, falling back to local storage:', err);
     }
   }
 
-  const stored = localStorage.getItem(LOCAL_STORAGE_TUTORS_KEY);
-  return stored ? JSON.parse(stored) : INITIAL_TUTORS;
+  return localList;
 };
 
 export const submitTutorApplication = async (appData: Omit<TutorApplication, 'id' | 'applicationId' | 'createdAt' | 'updatedAt' | 'status'>): Promise<TutorApplication> => {
@@ -173,7 +192,8 @@ export const submitTutorApplication = async (appData: Omit<TutorApplication, 'id
     }
   }
 
-  const current = await getTutors();
+  const stored = localStorage.getItem(LOCAL_STORAGE_TUTORS_KEY);
+  const current: TutorApplication[] = stored ? JSON.parse(stored) : INITIAL_TUTORS;
   const updated = [newApp, ...current];
   localStorage.setItem(LOCAL_STORAGE_TUTORS_KEY, JSON.stringify(updated));
 
@@ -187,25 +207,43 @@ export const updateTutorStatus = async (
 ): Promise<void> => {
   const now = new Date().toISOString();
 
-  if (isSupabaseConfigured && supabase) {
-    try {
-      await supabase
-        .from('tutor_applications')
-        .update({ status, admin_notes: adminNotes, updated_at: now })
-        .eq('id', tutorId);
-    } catch (err) {
-      console.warn('Supabase update failed, updating locally:', err);
-    }
-  }
-
-  const current = await getTutors();
-  const updated = current.map(t => {
+  // 1. Update local storage cache immediately
+  const stored = localStorage.getItem(LOCAL_STORAGE_TUTORS_KEY);
+  let localList: TutorApplication[] = stored ? JSON.parse(stored) : INITIAL_TUTORS;
+  
+  localList = localList.map(t => {
     if (t.id === tutorId || t.applicationId === tutorId) {
-      return { ...t, status, adminNotes: adminNotes ?? t.adminNotes, updatedAt: now };
+      return {
+        ...t,
+        status,
+        adminNotes: adminNotes !== undefined ? adminNotes : t.adminNotes,
+        updatedAt: now,
+      };
     }
     return t;
   });
-  localStorage.setItem(LOCAL_STORAGE_TUTORS_KEY, JSON.stringify(updated));
+  localStorage.setItem(LOCAL_STORAGE_TUTORS_KEY, JSON.stringify(localList));
+
+  // 2. Update Supabase table
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const updateData: any = { status, updated_at: now };
+      if (adminNotes !== undefined) {
+        updateData.admin_notes = adminNotes;
+      }
+
+      const { error } = await supabase
+        .from('tutor_applications')
+        .update(updateData)
+        .or(`id.eq.${tutorId},application_id.eq.${tutorId}`);
+
+      if (error) {
+        console.error('Supabase status update error:', error);
+      }
+    } catch (err) {
+      console.warn('Supabase update failed, preserved locally:', err);
+    }
+  }
 };
 
 export const findTutorByAppIdOrEmail = async (query: string): Promise<TutorApplication | null> => {
@@ -217,6 +255,9 @@ export const findTutorByAppIdOrEmail = async (query: string): Promise<TutorAppli
 };
 
 export const getParentInquiries = async (): Promise<ParentInquiry[]> => {
+  const stored = localStorage.getItem(LOCAL_STORAGE_INQUIRIES_KEY);
+  const localList: ParentInquiry[] = stored ? JSON.parse(stored) : INITIAL_INQUIRIES;
+
   if (isSupabaseConfigured && supabase) {
     try {
       const { data, error } = await supabase
@@ -225,8 +266,8 @@ export const getParentInquiries = async (): Promise<ParentInquiry[]> => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      if (data && data.length > 0) {
-        return data.map((row) => ({
+      if (data) {
+        const remoteInquiries: ParentInquiry[] = data.map((row) => ({
           id: row.id,
           inquiryId: row.inquiry_id,
           parentName: row.parent_name,
@@ -252,14 +293,28 @@ export const getParentInquiries = async (): Promise<ParentInquiry[]> => {
           createdAt: row.created_at,
           updatedAt: row.updated_at,
         }));
+
+        const mergedInquiries = remoteInquiries.map(ri => {
+          const localMatch = localList.find(li => li.id === ri.id || li.inquiryId === ri.inquiryId);
+          if (localMatch && localMatch.status !== ri.status) {
+            return {
+              ...ri,
+              status: localMatch.status,
+              updatedAt: localMatch.updatedAt || ri.updatedAt,
+            };
+          }
+          return ri;
+        });
+
+        localStorage.setItem(LOCAL_STORAGE_INQUIRIES_KEY, JSON.stringify(mergedInquiries));
+        return mergedInquiries;
       }
     } catch (err) {
       console.warn('Supabase fetch failed, falling back to local storage:', err);
     }
   }
 
-  const stored = localStorage.getItem(LOCAL_STORAGE_INQUIRIES_KEY);
-  return stored ? JSON.parse(stored) : INITIAL_INQUIRIES;
+  return localList;
 };
 
 export const submitParentInquiry = async (inqData: Omit<ParentInquiry, 'id' | 'inquiryId' | 'createdAt' | 'updatedAt' | 'status'>): Promise<ParentInquiry> => {
@@ -314,7 +369,8 @@ export const submitParentInquiry = async (inqData: Omit<ParentInquiry, 'id' | 'i
     }
   }
 
-  const current = await getParentInquiries();
+  const stored = localStorage.getItem(LOCAL_STORAGE_INQUIRIES_KEY);
+  const current: ParentInquiry[] = stored ? JSON.parse(stored) : INITIAL_INQUIRIES;
   const updated = [newInquiry, ...current];
   localStorage.setItem(LOCAL_STORAGE_INQUIRIES_KEY, JSON.stringify(updated));
 
@@ -327,25 +383,29 @@ export const updateInquiryStatus = async (
 ): Promise<void> => {
   const now = new Date().toISOString();
 
-  if (isSupabaseConfigured && supabase) {
-    try {
-      await supabase
-        .from('parent_inquiries')
-        .update({ status, updated_at: now })
-        .eq('id', inquiryId);
-    } catch (err) {
-      console.warn('Supabase inquiry update failed:', err);
-    }
-  }
+  const stored = localStorage.getItem(LOCAL_STORAGE_INQUIRIES_KEY);
+  let localList: ParentInquiry[] = stored ? JSON.parse(stored) : INITIAL_INQUIRIES;
 
-  const current = await getParentInquiries();
-  const updated = current.map(i => {
+  localList = localList.map(i => {
     if (i.id === inquiryId || i.inquiryId === inquiryId) {
       return { ...i, status, updatedAt: now };
     }
     return i;
   });
-  localStorage.setItem(LOCAL_STORAGE_INQUIRIES_KEY, JSON.stringify(updated));
+  localStorage.setItem(LOCAL_STORAGE_INQUIRIES_KEY, JSON.stringify(localList));
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { error } = await supabase
+        .from('parent_inquiries')
+        .update({ status, updated_at: now })
+        .or(`id.eq.${inquiryId},inquiry_id.eq.${inquiryId}`);
+
+      if (error) console.error('Supabase inquiry update error:', error);
+    } catch (err) {
+      console.warn('Supabase inquiry update failed:', err);
+    }
+  }
 };
 
 export const getTutorMatches = async (): Promise<TutorMatch[]> => {
