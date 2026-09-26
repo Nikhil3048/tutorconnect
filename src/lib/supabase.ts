@@ -441,6 +441,50 @@ export const saveTutorMatch = async (match: Omit<TutorMatch, 'id' | 'createdAt'>
   return newMatch;
 };
 
+export const deleteTutorApplication = async (tutorId: string): Promise<void> => {
+  const stored = localStorage.getItem(LOCAL_STORAGE_TUTORS_KEY);
+  if (stored) {
+    const current: TutorApplication[] = JSON.parse(stored);
+    const filtered = current.filter(t => t.id !== tutorId && t.applicationId !== tutorId);
+    localStorage.setItem(LOCAL_STORAGE_TUTORS_KEY, JSON.stringify(filtered));
+  }
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { error } = await supabase
+        .from('tutor_applications')
+        .delete()
+        .or(`id.eq.${tutorId},application_id.eq.${tutorId}`);
+
+      if (error) console.error('Supabase tutor delete error:', error);
+    } catch (err) {
+      console.warn('Supabase tutor delete failed:', err);
+    }
+  }
+};
+
+export const deleteParentInquiry = async (inquiryId: string): Promise<void> => {
+  const stored = localStorage.getItem(LOCAL_STORAGE_INQUIRIES_KEY);
+  if (stored) {
+    const current: ParentInquiry[] = JSON.parse(stored);
+    const filtered = current.filter(i => i.id !== inquiryId && i.inquiryId !== inquiryId);
+    localStorage.setItem(LOCAL_STORAGE_INQUIRIES_KEY, JSON.stringify(filtered));
+  }
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { error } = await supabase
+        .from('parent_inquiries')
+        .delete()
+        .or(`id.eq.${inquiryId},inquiry_id.eq.${inquiryId}`);
+
+      if (error) console.error('Supabase inquiry delete error:', error);
+    } catch (err) {
+      console.warn('Supabase inquiry delete failed:', err);
+    }
+  }
+};
+
 export const clearAllLocalData = async (): Promise<void> => {
   if (typeof window !== 'undefined') {
     localStorage.removeItem(LOCAL_STORAGE_TUTORS_KEY);

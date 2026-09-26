@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { TutorApplication, ParentInquiry, TutorMatch } from '../types';
-import { getTutors, getParentInquiries, getTutorMatches, updateTutorStatus as apiUpdateTutorStatus, updateInquiryStatus as apiUpdateInquiryStatus, saveTutorMatch as apiSaveTutorMatch, clearAllLocalData, isSupabaseConfigured, supabase } from '../lib/supabase';
+import { getTutors, getParentInquiries, getTutorMatches, updateTutorStatus as apiUpdateTutorStatus, updateInquiryStatus as apiUpdateInquiryStatus, deleteTutorApplication as apiDeleteTutorApplication, deleteParentInquiry as apiDeleteParentInquiry, saveTutorMatch as apiSaveTutorMatch, clearAllLocalData, isSupabaseConfigured, supabase } from '../lib/supabase';
 
 interface ToastMessage {
   id: string;
@@ -24,6 +24,8 @@ interface AuthContextType {
   clearAllData: () => Promise<void>;
   updateTutorStatus: (id: string, status: any, notes?: string) => Promise<void>;
   updateInquiryStatus: (id: string, status: any) => Promise<void>;
+  deleteTutorApplication: (id: string) => Promise<void>;
+  deleteParentInquiry: (id: string) => Promise<void>;
   saveTutorMatch: (match: any) => Promise<void>;
   
   toasts: ToastMessage[];
@@ -210,6 +212,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     addToast('Tutor Assigned', 'Tutor matched and saved to parent inquiry', 'success');
   };
 
+  const handleDeleteTutorApplication = async (id: string) => {
+    setTutors(prev => prev.filter(t => t.id !== id && t.applicationId !== id));
+    await apiDeleteTutorApplication(id);
+    await refreshData();
+    addToast('Application Deleted', 'Tutor application deleted permanently.', 'info');
+  };
+
+  const handleDeleteParentInquiry = async (id: string) => {
+    setInquiries(prev => prev.filter(i => i.id !== id && i.inquiryId !== id));
+    await apiDeleteParentInquiry(id);
+    await refreshData();
+    addToast('Inquiry Deleted', 'Parent inquiry deleted permanently.', 'info');
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -225,6 +241,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         clearAllData,
         updateTutorStatus: handleUpdateTutorStatus,
         updateInquiryStatus: handleUpdateInquiryStatus,
+        deleteTutorApplication: handleDeleteTutorApplication,
+        deleteParentInquiry: handleDeleteParentInquiry,
         saveTutorMatch: handleSaveTutorMatch,
         toasts,
         addToast,

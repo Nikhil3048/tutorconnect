@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Upload, FileText, Image as ImageIcon, X, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
+import { Upload, FileText, Image as ImageIcon, X, CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface FileUploadProps {
   label: string;
@@ -61,24 +61,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       setError('Failed to process uploaded file. Please try another file.');
     };
     reader.readAsDataURL(file);
-  };
-
-  const handleUseSample = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setError(null);
-    if (isImage) {
-      onFileSelect({
-        url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400',
-        fileName: 'passport_sample_photo.jpg',
-        sizeMB: '1.20 MB',
-      });
-    } else {
-      onFileSelect({
-        url: '#sample-doc-preview',
-        fileName: 'identity_doc_verified.pdf',
-        sizeMB: '0.85 MB',
-      });
-    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -162,18 +144,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           <p className="text-[11px] text-slate-400 mt-1">
             {isImage ? 'JPG, PNG or WebP' : 'PDF, JPG or PNG'} (Max {maxSizeMB} MB)
           </p>
-
-          {/* Quick Demo Sample Upload Button */}
-          <div className="mt-3 pt-2 border-t border-slate-100 flex justify-center">
-            <button
-              type="button"
-              onClick={handleUseSample}
-              className="px-3 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-[11px] rounded-lg border border-blue-200 flex items-center gap-1.5 transition-colors"
-            >
-              <Sparkles className="w-3 h-3 text-blue-600" />
-              {isImage ? 'Use Sample Passport Photo' : 'Use Sample Document'}
-            </button>
-          </div>
         </div>
       )}
 

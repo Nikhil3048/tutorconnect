@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import type { TutorApplication } from '../../types';
 import { StatusBadge } from '../common/Badge';
-import { Search, Filter, Eye, CheckCircle2 } from 'lucide-react';
+import { Search, Filter, Eye, CheckCircle2, Trash2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 interface ListProps {
@@ -10,12 +10,18 @@ interface ListProps {
 }
 
 export const TutorApplicationsList: React.FC<ListProps> = ({ tutors, onSelectTutor }) => {
-  const { updateTutorStatus } = useAuth();
+  const { updateTutorStatus, deleteTutorApplication } = useAuth();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [genderFilter, setGenderFilter] = useState<string>('All');
   const [subjectFilter, setSubjectFilter] = useState<string>('All');
+
+  const handleDelete = (t: TutorApplication) => {
+    if (window.confirm(`Are you sure you want to PERMANENTLY DELETE application "${t.fullName}" (${t.applicationId})?`)) {
+      deleteTutorApplication(t.id);
+    }
+  };
 
   const filteredTutors = useMemo(() => {
     return tutors.filter(t => {
@@ -200,6 +206,14 @@ export const TutorApplicationsList: React.FC<ListProps> = ({ tutors, onSelectTut
                             <CheckCircle2 className="w-4 h-4" />
                           </button>
                         )}
+
+                        <button
+                          onClick={() => handleDelete(t)}
+                          className="p-1.5 rounded-xl text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors"
+                          title="Delete Application Permanently"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </td>
                   </tr>

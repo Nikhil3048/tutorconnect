@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { ParentInquiry, InquiryStatus } from '../../types';
-import { Search, Sparkles } from 'lucide-react';
+import { Search, Sparkles, Trash2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 interface InquiriesListProps {
@@ -12,9 +12,15 @@ export const ParentInquiriesList: React.FC<InquiriesListProps> = ({
   inquiries,
   onOpenMatchModal,
 }) => {
-  const { updateInquiryStatus } = useAuth();
+  const { updateInquiryStatus, deleteParentInquiry } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('All');
+
+  const handleDelete = (inq: ParentInquiry) => {
+    if (window.confirm(`Are you sure you want to PERMANENTLY DELETE inquiry "${inq.inquiryId}" for ${inq.parentName}?`)) {
+      deleteParentInquiry(inq.id);
+    }
+  };
 
   const filtered = inquiries.filter(inq => {
     const q = searchQuery.toLowerCase().trim();
@@ -135,13 +141,22 @@ export const ParentInquiriesList: React.FC<InquiriesListProps> = ({
                     </td>
 
                     <td className="py-4 px-6 text-right">
-                      <button
-                        onClick={() => onOpenMatchModal(inq)}
-                        className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs shadow-sm shadow-blue-500/20 flex items-center gap-1.5 ml-auto"
-                      >
-                        <Sparkles className="w-3.5 h-3.5 text-blue-300" />
-                        Match Tutors
-                      </button>
+                      <div className="flex items-center justify-end space-x-2">
+                        <button
+                          onClick={() => onOpenMatchModal(inq)}
+                          className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs shadow-sm shadow-blue-500/20 flex items-center gap-1.5"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-blue-300" />
+                          Match Tutors
+                        </button>
+                        <button
+                          onClick={() => handleDelete(inq)}
+                          className="p-1.5 rounded-xl text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors"
+                          title="Delete Inquiry Permanently"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

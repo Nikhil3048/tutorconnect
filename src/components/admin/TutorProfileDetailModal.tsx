@@ -6,7 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { 
   User, MapPin, GraduationCap, 
   BookOpen, CheckCircle2, XCircle, AlertTriangle, 
-  Eye, ShieldCheck 
+  Eye, ShieldCheck, Trash2 
 } from 'lucide-react';
 
 interface ModalProps {
@@ -15,13 +15,20 @@ interface ModalProps {
 }
 
 export const TutorProfileDetailModal: React.FC<ModalProps> = ({ tutor, onClose }) => {
-  const { updateTutorStatus, addToast } = useAuth();
+  const { updateTutorStatus, deleteTutorApplication, addToast } = useAuth();
   const [adminNoteInput, setAdminNoteInput] = useState<string>('');
   const [actionType, setActionType] = useState<'Approve' | 'Reject' | 'RequestDocs' | null>(null);
   const [docPreviewUrl, setDocPreviewUrl] = useState<string | null>(null);
   const [docPreviewTitle, setDocPreviewTitle] = useState<string>('');
 
   if (!tutor) return null;
+
+  const handleDeleteApplication = async () => {
+    if (window.confirm(`Are you sure you want to PERMANENTLY DELETE application for "${tutor.fullName}" (${tutor.applicationId})?`)) {
+      await deleteTutorApplication(tutor.id);
+      onClose();
+    }
+  };
 
   const handleExecuteStatusUpdate = async (status: TutorApplicationStatus) => {
     if ((status === 'Rejected' || status === 'Documents Required') && !adminNoteInput.trim()) {
@@ -78,7 +85,7 @@ export const TutorProfileDetailModal: React.FC<ModalProps> = ({ tutor, onClose }
               </div>
             </div>
 
-            <div className="flex items-center gap-2 self-stretch sm:self-auto">
+            <div className="flex flex-wrap items-center gap-2 self-stretch sm:self-auto">
               <button
                 onClick={() => handleExecuteStatusUpdate('Approved')}
                 className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-1.5 transition-colors"
@@ -99,6 +106,14 @@ export const TutorProfileDetailModal: React.FC<ModalProps> = ({ tutor, onClose }
               >
                 <XCircle className="w-4 h-4" />
                 Reject
+              </button>
+              <button
+                onClick={handleDeleteApplication}
+                className="px-3.5 py-2.5 bg-rose-950/80 hover:bg-rose-900 border border-rose-800 text-rose-300 font-bold text-xs rounded-xl shadow-md flex items-center gap-1.5 transition-colors"
+                title="Delete Application Permanently"
+              >
+                <Trash2 className="w-4 h-4 text-rose-400" />
+                Delete
               </button>
             </div>
           </div>
