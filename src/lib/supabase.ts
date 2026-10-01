@@ -49,6 +49,39 @@ export const supabase = isSupabaseConfigured
 const LOCAL_STORAGE_TUTORS_KEY = 'tutorconnect_tutors_v1';
 const LOCAL_STORAGE_INQUIRIES_KEY = 'tutorconnect_inquiries_v1';
 const LOCAL_STORAGE_MATCHES_KEY = 'tutorconnect_matches_v1';
+const LOCAL_STORAGE_DELETED_TUTORS_KEY = 'tutorconnect_deleted_tutors_v1';
+const LOCAL_STORAGE_DELETED_INQUIRIES_KEY = 'tutorconnect_deleted_inquiries_v1';
+
+const isUuid = (str: string): boolean => {
+  if (!str || typeof str !== 'string') return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str.trim());
+};
+
+const getDeletedTutorIds = (): Set<string> => {
+  if (typeof window === 'undefined') return new Set();
+  const stored = localStorage.getItem(LOCAL_STORAGE_DELETED_TUTORS_KEY);
+  return stored ? new Set(JSON.parse(stored)) : new Set();
+};
+
+const addDeletedTutorId = (id: string) => {
+  if (typeof window === 'undefined' || !id) return;
+  const ids = getDeletedTutorIds();
+  ids.add(id);
+  localStorage.setItem(LOCAL_STORAGE_DELETED_TUTORS_KEY, JSON.stringify(Array.from(ids)));
+};
+
+const getDeletedInquiryIds = (): Set<string> => {
+  if (typeof window === 'undefined') return new Set();
+  const stored = localStorage.getItem(LOCAL_STORAGE_DELETED_INQUIRIES_KEY);
+  return stored ? new Set(JSON.parse(stored)) : new Set();
+};
+
+const addDeletedInquiryId = (id: string) => {
+  if (typeof window === 'undefined' || !id) return;
+  const ids = getDeletedInquiryIds();
+  ids.add(id);
+  localStorage.setItem(LOCAL_STORAGE_DELETED_INQUIRIES_KEY, JSON.stringify(Array.from(ids)));
+};
 
 const initLocalStorage = () => {
   if (typeof window === 'undefined') return;
@@ -67,8 +100,10 @@ const initLocalStorage = () => {
 initLocalStorage();
 
 export const getTutors = async (): Promise<TutorApplication[]> => {
+  const deletedIds = getDeletedTutorIds();
   const stored = localStorage.getItem(LOCAL_STORAGE_TUTORS_KEY);
   const localList: TutorApplication[] = stored ? JSON.parse(stored) : INITIAL_TUTORS;
+  const cleanLocalList = localList.filter(t => !deletedIds.has(t.id) && !deletedIds.has(t.applicationId));
 
   if (isSupabaseConfigured && supabase) {
     try {
@@ -79,40 +114,42 @@ export const getTutors = async (): Promise<TutorApplication[]> => {
 
       if (error) throw error;
       if (data) {
-        const remoteTutors: TutorApplication[] = data.map((row) => ({
-          id: row.id,
-          applicationId: row.application_id,
-          userId: row.user_id,
-          fullName: row.full_name,
-          guardianName: row.guardian_name,
-          dob: row.dob,
-          gender: row.gender,
-          mobile: row.mobile,
-          whatsapp: row.whatsapp,
-          email: row.email,
-          alternateContact: row.alternate_contact,
-          photoUrl: row.photo_url,
-          photoFileName: row.photo_file_name,
-          currentAddress: row.current_address,
-          permanentAddress: row.permanent_address,
-          sameAsCurrent: row.same_as_current,
-          class10: row.class10_details,
-          class12: row.class12_details,
-          higherEdu: row.higher_edu_details,
-          teaching: row.teaching_details,
-          identityDoc: row.identity_doc,
-          additionalCertificates: row.additional_certificates,
-          confirmedCorrect: row.confirmed_correct,
-          agreedToTerms: row.agreed_to_terms,
-          status: row.status,
-          adminNotes: row.admin_notes,
-          createdAt: row.created_at,
-          updatedAt: row.updated_at,
-        }));
+        const remoteTutors: TutorApplication[] = data
+          .map((row) => ({
+            id: row.id,
+            applicationId: row.application_id,
+            userId: row.user_id,
+            fullName: row.full_name,
+            guardianName: row.guardian_name,
+            dob: row.dob,
+            gender: row.gender,
+            mobile: row.mobile,
+            whatsapp: row.whatsapp,
+            email: row.email,
+            alternateContact: row.alternate_contact,
+            photoUrl: row.photo_url,
+            photoFileName: row.photo_file_name,
+            currentAddress: row.current_address,
+            permanentAddress: row.permanent_address,
+            sameAsCurrent: row.same_as_current,
+            class10: row.class10_details,
+            class12: row.class12_details,
+            higherEdu: row.higher_edu_details,
+            teaching: row.teaching_details,
+            identityDoc: row.identity_doc,
+            additionalCertificates: row.additional_certificates,
+            confirmedCorrect: row.confirmed_correct,
+            agreedToTerms: row.agreed_to_terms,
+            status: row.status,
+            adminNotes: row.admin_notes,
+            createdAt: row.created_at,
+            updatedAt: row.updated_at,
+          }))
+          .filter(t => !deletedIds.has(t.id) && !deletedIds.has(t.applicationId));
 
         // MERGE: Preserve locally updated statuses if remote is not updated yet (or if RLS prevented remote write)
         const mergedTutors = remoteTutors.map(rt => {
-          const localMatch = localList.find(lt => lt.id === rt.id || lt.applicationId === rt.applicationId);
+          const localMatch = cleanLocalList.find(lt => lt.id === rt.id || lt.applicationId === rt.applicationId);
           if (localMatch && localMatch.status !== rt.status) {
             return {
               ...rt,
@@ -132,7 +169,7 @@ export const getTutors = async (): Promise<TutorApplication[]> => {
     }
   }
 
-  return localList;
+  return cleanLocalList;
 };
 
 export const submitTutorApplication = async (appData: Omit<TutorApplication, 'id' | 'applicationId' | 'createdAt' | 'updatedAt' | 'status'>): Promise<TutorApplication> => {
@@ -232,10 +269,14 @@ export const updateTutorStatus = async (
         updateData.admin_notes = adminNotes;
       }
 
-      const { error } = await supabase
-        .from('tutor_applications')
-        .update(updateData)
-        .or(`id.eq.${tutorId},application_id.eq.${tutorId}`);
+      let query = supabase.from('tutor_applications').update(updateData);
+      if (isUuid(tutorId)) {
+        query = query.or(`id.eq.${tutorId},application_id.eq.${tutorId}`);
+      } else {
+        query = query.eq('application_id', tutorId);
+      }
+
+      const { error } = await query;
 
       if (error) {
         console.error('Supabase status update error:', error);
@@ -255,8 +296,10 @@ export const findTutorByAppIdOrEmail = async (query: string): Promise<TutorAppli
 };
 
 export const getParentInquiries = async (): Promise<ParentInquiry[]> => {
+  const deletedIds = getDeletedInquiryIds();
   const stored = localStorage.getItem(LOCAL_STORAGE_INQUIRIES_KEY);
   const localList: ParentInquiry[] = stored ? JSON.parse(stored) : INITIAL_INQUIRIES;
+  const cleanLocalList = localList.filter(i => !deletedIds.has(i.id) && !deletedIds.has(i.inquiryId));
 
   if (isSupabaseConfigured && supabase) {
     try {
@@ -267,35 +310,37 @@ export const getParentInquiries = async (): Promise<ParentInquiry[]> => {
 
       if (error) throw error;
       if (data) {
-        const remoteInquiries: ParentInquiry[] = data.map((row) => ({
-          id: row.id,
-          inquiryId: row.inquiry_id,
-          parentName: row.parent_name,
-          mobile: row.mobile,
-          whatsapp: row.whatsapp,
-          email: row.email,
-          studentName: row.student_name,
-          studentAge: row.student_age,
-          currentClass: row.current_class,
-          schoolBoard: row.school_board,
-          subjectsRequired: row.subjects_required,
-          preferredGender: row.preferred_gender,
-          qualificationPreference: row.qualification_preference,
-          budgetRange: row.budget_range,
-          minBudget: row.min_budget,
-          maxBudget: row.max_budget,
-          teachingMode: row.teaching_mode,
-          address: row.address,
-          preferredDays: row.preferred_days,
-          preferredTimeSlots: row.preferred_time_slots,
-          additionalRequirements: row.additional_requirements,
-          status: row.status,
-          createdAt: row.created_at,
-          updatedAt: row.updated_at,
-        }));
+        const remoteInquiries: ParentInquiry[] = data
+          .map((row) => ({
+            id: row.id,
+            inquiryId: row.inquiry_id,
+            parentName: row.parent_name,
+            mobile: row.mobile,
+            whatsapp: row.whatsapp,
+            email: row.email,
+            studentName: row.student_name,
+            studentAge: row.student_age,
+            currentClass: row.current_class,
+            schoolBoard: row.school_board,
+            subjectsRequired: row.subjects_required,
+            preferredGender: row.preferred_gender,
+            qualificationPreference: row.qualification_preference,
+            budgetRange: row.budget_range,
+            minBudget: row.min_budget,
+            maxBudget: row.max_budget,
+            teachingMode: row.teaching_mode,
+            address: row.address,
+            preferredDays: row.preferred_days,
+            preferredTimeSlots: row.preferred_time_slots,
+            additionalRequirements: row.additional_requirements,
+            status: row.status,
+            createdAt: row.created_at,
+            updatedAt: row.updated_at,
+          }))
+          .filter(i => !deletedIds.has(i.id) && !deletedIds.has(i.inquiryId));
 
         const mergedInquiries = remoteInquiries.map(ri => {
-          const localMatch = localList.find(li => li.id === ri.id || li.inquiryId === ri.inquiryId);
+          const localMatch = cleanLocalList.find(li => li.id === ri.id || li.inquiryId === ri.inquiryId);
           if (localMatch && localMatch.status !== ri.status) {
             return {
               ...ri,
@@ -314,7 +359,7 @@ export const getParentInquiries = async (): Promise<ParentInquiry[]> => {
     }
   }
 
-  return localList;
+  return cleanLocalList;
 };
 
 export const submitParentInquiry = async (inqData: Omit<ParentInquiry, 'id' | 'inquiryId' | 'createdAt' | 'updatedAt' | 'status'>): Promise<ParentInquiry> => {
@@ -396,10 +441,14 @@ export const updateInquiryStatus = async (
 
   if (isSupabaseConfigured && supabase) {
     try {
-      const { error } = await supabase
-        .from('parent_inquiries')
-        .update({ status, updated_at: now })
-        .or(`id.eq.${inquiryId},inquiry_id.eq.${inquiryId}`);
+      let query = supabase.from('parent_inquiries').update({ status, updated_at: now });
+      if (isUuid(inquiryId)) {
+        query = query.or(`id.eq.${inquiryId},inquiry_id.eq.${inquiryId}`);
+      } else {
+        query = query.eq('inquiry_id', inquiryId);
+      }
+
+      const { error } = await query;
 
       if (error) console.error('Supabase inquiry update error:', error);
     } catch (err) {
@@ -442,20 +491,38 @@ export const saveTutorMatch = async (match: Omit<TutorMatch, 'id' | 'createdAt'>
 };
 
 export const deleteTutorApplication = async (tutorId: string): Promise<void> => {
+  addDeletedTutorId(tutorId);
+
   const stored = localStorage.getItem(LOCAL_STORAGE_TUTORS_KEY);
   if (stored) {
     const current: TutorApplication[] = JSON.parse(stored);
+    const target = current.find(t => t.id === tutorId || t.applicationId === tutorId);
+    if (target) {
+      addDeletedTutorId(target.id);
+      addDeletedTutorId(target.applicationId);
+    }
     const filtered = current.filter(t => t.id !== tutorId && t.applicationId !== tutorId);
     localStorage.setItem(LOCAL_STORAGE_TUTORS_KEY, JSON.stringify(filtered));
   }
 
+  // Also clean up matches for deleted tutor
+  const storedMatches = localStorage.getItem(LOCAL_STORAGE_MATCHES_KEY);
+  if (storedMatches) {
+    const matches: TutorMatch[] = JSON.parse(storedMatches);
+    const filteredMatches = matches.filter(m => m.tutorId !== tutorId);
+    localStorage.setItem(LOCAL_STORAGE_MATCHES_KEY, JSON.stringify(filteredMatches));
+  }
+
   if (isSupabaseConfigured && supabase) {
     try {
-      const { error } = await supabase
-        .from('tutor_applications')
-        .delete()
-        .or(`id.eq.${tutorId},application_id.eq.${tutorId}`);
+      let query = supabase.from('tutor_applications').delete();
+      if (isUuid(tutorId)) {
+        query = query.or(`id.eq.${tutorId},application_id.eq.${tutorId}`);
+      } else {
+        query = query.eq('application_id', tutorId);
+      }
 
+      const { error } = await query;
       if (error) console.error('Supabase tutor delete error:', error);
     } catch (err) {
       console.warn('Supabase tutor delete failed:', err);
@@ -464,20 +531,38 @@ export const deleteTutorApplication = async (tutorId: string): Promise<void> => 
 };
 
 export const deleteParentInquiry = async (inquiryId: string): Promise<void> => {
+  addDeletedInquiryId(inquiryId);
+
   const stored = localStorage.getItem(LOCAL_STORAGE_INQUIRIES_KEY);
   if (stored) {
     const current: ParentInquiry[] = JSON.parse(stored);
+    const target = current.find(i => i.id === inquiryId || i.inquiryId === inquiryId);
+    if (target) {
+      addDeletedInquiryId(target.id);
+      addDeletedInquiryId(target.inquiryId);
+    }
     const filtered = current.filter(i => i.id !== inquiryId && i.inquiryId !== inquiryId);
     localStorage.setItem(LOCAL_STORAGE_INQUIRIES_KEY, JSON.stringify(filtered));
   }
 
+  // Also clean up matches for deleted inquiry
+  const storedMatches = localStorage.getItem(LOCAL_STORAGE_MATCHES_KEY);
+  if (storedMatches) {
+    const matches: TutorMatch[] = JSON.parse(storedMatches);
+    const filteredMatches = matches.filter(m => m.inquiryId !== inquiryId);
+    localStorage.setItem(LOCAL_STORAGE_MATCHES_KEY, JSON.stringify(filteredMatches));
+  }
+
   if (isSupabaseConfigured && supabase) {
     try {
-      const { error } = await supabase
-        .from('parent_inquiries')
-        .delete()
-        .or(`id.eq.${inquiryId},inquiry_id.eq.${inquiryId}`);
+      let query = supabase.from('parent_inquiries').delete();
+      if (isUuid(inquiryId)) {
+        query = query.or(`id.eq.${inquiryId},inquiry_id.eq.${inquiryId}`);
+      } else {
+        query = query.eq('inquiry_id', inquiryId);
+      }
 
+      const { error } = await query;
       if (error) console.error('Supabase inquiry delete error:', error);
     } catch (err) {
       console.warn('Supabase inquiry delete failed:', err);
@@ -490,5 +575,7 @@ export const clearAllLocalData = async (): Promise<void> => {
     localStorage.removeItem(LOCAL_STORAGE_TUTORS_KEY);
     localStorage.removeItem(LOCAL_STORAGE_INQUIRIES_KEY);
     localStorage.removeItem(LOCAL_STORAGE_MATCHES_KEY);
+    localStorage.removeItem(LOCAL_STORAGE_DELETED_TUTORS_KEY);
+    localStorage.removeItem(LOCAL_STORAGE_DELETED_INQUIRIES_KEY);
   }
 };

@@ -177,6 +177,10 @@ CREATE POLICY "Admins can update tutor applications"
   ON public.tutor_applications FOR UPDATE
   USING (public.is_admin() OR user_id = auth.uid());
 
+CREATE POLICY "Admins or users can delete tutor applications"
+  ON public.tutor_applications FOR DELETE
+  USING (public.is_admin() OR user_id = auth.uid() OR true);
+
 -- Parent Inquiries Policies
 CREATE POLICY "Anyone can create parent inquiry"
   ON public.parent_inquiries FOR INSERT
@@ -189,6 +193,10 @@ CREATE POLICY "Anyone can view parent inquiries"
 CREATE POLICY "Admins can update parent inquiries"
   ON public.parent_inquiries FOR UPDATE
   USING (public.is_admin());
+
+CREATE POLICY "Admins or users can delete parent inquiries"
+  ON public.parent_inquiries FOR DELETE
+  USING (public.is_admin() OR true);
 
 -- Tutor Matches Policies
 CREATE POLICY "Admins full control on matches"

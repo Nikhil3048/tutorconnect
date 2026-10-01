@@ -213,16 +213,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const handleDeleteTutorApplication = async (id: string) => {
-    setTutors(prev => prev.filter(t => t.id !== id && t.applicationId !== id));
+    const target = tutors.find(t => t.id === id || t.applicationId === id);
+    const id1 = target ? target.id : id;
+    const id2 = target ? target.applicationId : id;
+
+    setTutors(prev => prev.filter(t => t.id !== id1 && t.applicationId !== id1 && t.id !== id2 && t.applicationId !== id2));
+    setMatches(prev => prev.filter(m => m.tutorId !== id1 && m.tutorId !== id2));
     await apiDeleteTutorApplication(id);
-    await refreshData();
     addToast('Application Deleted', 'Tutor application deleted permanently.', 'info');
   };
 
   const handleDeleteParentInquiry = async (id: string) => {
-    setInquiries(prev => prev.filter(i => i.id !== id && i.inquiryId !== id));
+    const target = inquiries.find(i => i.id === id || i.inquiryId === id);
+    const id1 = target ? target.id : id;
+    const id2 = target ? target.inquiryId : id;
+
+    setInquiries(prev => prev.filter(i => i.id !== id1 && i.inquiryId !== id1 && i.id !== id2 && i.inquiryId !== id2));
+    setMatches(prev => prev.filter(m => m.inquiryId !== id1 && m.inquiryId !== id2));
     await apiDeleteParentInquiry(id);
-    await refreshData();
     addToast('Inquiry Deleted', 'Parent inquiry deleted permanently.', 'info');
   };
 
